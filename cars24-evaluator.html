@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cars24 — AI Condition Evaluator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange: #FF5A00;
+    --orange-light: #FFF0E8;
+    --bg: #F7F6F3;
+    --surface: #FFFFFF;
+    --border: #E8E5DF;
+    --text: #1A1A1A;
+    --muted: #6B6B6B;
+    --hint: #A0A0A0;
+    --green-bg: #EAF3DE;
+    --green-text: #3B6D11;
+    --amber-bg: #FAEEDA;
+    --amber-text: #854F0B;
+    --red-bg: #FCEBEB;
+    --red-text: #A32D2D;
+    --green-dot: #639922;
+    --amber-dot: #EF9F27;
+    --red-dot: #E24B4A;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 2rem;
+  }
+
+  .logo {
+    background: var(--orange);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 5px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+
+  .header-text h1 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .header-text p {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* UPLOAD */
+  #upload-section { }
+
+  .drop-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    background: var(--surface);
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--orange);
+    background: var(--orange-light);
+  }
+
+  .upload-icon-wrap {
+    width: 52px;
+    height: 52px;
+    background: var(--orange-light);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+  }
+
+  .drop-zone h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .drop-zone p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .drop-zone .hint {
+    font-size: 12px;
+    color: var(--hint);
+    margin-top: 8px;
+  }
+
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 1.25rem 0;
+    color: var(--hint);
+    font-size: 13px;
+  }
+
+  .or-divider::before, .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .browse-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity 0.2s;
+  }
+
+  .browse-btn:hover { opacity: 0.9; }
+
+  /* PREVIEW */
+  #preview-section { display: none; }
+
+  .preview-wrap { position: relative; }
+
+  .preview-img {
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+
+  .change-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    backdrop-filter: blur(4px);
+  }
+
+  .analyze-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 14px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity 0.2s;
+  }
+
+  .analyze-btn:hover { opacity: 0.9; }
+  .analyze-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* LOADING */
+  #loading-section { display: none; }
+
+  .loading-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .loading-card p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .loading-steps {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 1.5rem;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--hint);
+  }
+
+  .step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.4s;
+  }
+
+  .step.active .step-dot { background: var(--orange); }
+  .step.active { color: var(--orange); }
+  .step.done .step-dot { background: var(--green-dot); }
+  .step.done { color: var(--green-dot); }
+
+  /* ERROR */
+  #error-section { display: none; margin-top: 1rem; }
+
+  .error-box {
+    background: var(--red-bg);
+    color: var(--red-text);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .error-box strong { display: block; font-size: 14px; margin-bottom: 4px; }
+
+  /* RESULTS */
+  #results-section { display: none; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hint);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin: 1.5rem 0 10px;
+  }
+
+  /* Score card */
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  .score-ring {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .score-ring svg {
+    width: 80px;
+    height: 80px;
+    transform: rotate(-90deg);
+  }
+
+  .score-ring-track { fill: none; stroke: var(--border); stroke-width: 5; }
+  .score-ring-fill { fill: none; stroke: var(--orange); stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+
+  .score-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    line-height: 1;
+  }
+
+  .score-num { font-size: 22px; font-weight: 600; color: var(--text); }
+  .score-denom { font-size: 11px; color: var(--hint); }
+
+  .score-meta h2 { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.4; }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 7px;
+  }
+
+  .badge-good { background: var(--green-bg); color: var(--green-text); }
+  .badge-fair { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-poor { background: var(--red-bg); color: var(--red-text); }
+
+  .car-id {
+    font-size: 12px;
+    color: var(--hint);
+    margin-top: 5px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Breakdown */
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .breakdown-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+  }
+
+  .b-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+  .b-track {
+    background: var(--bg);
+    border-radius: 3px;
+    height: 5px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .b-fill {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--orange);
+    transition: width 1s ease;
+  }
+
+  .b-score { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  /* Issues */
+  .issues-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .issue-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .issue-row:last-child { border-bottom: none; }
+
+  .sev-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+
+  .d-low { background: var(--green-dot); }
+  .d-med { background: var(--amber-dot); }
+  .d-high { background: var(--red-dot); }
+
+  .i-title { font-size: 13px; color: var(--text); font-weight: 500; }
+  .i-sev { font-size: 11px; color: var(--hint); margin-top: 2px; }
+
+  /* Price */
+  .price-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .price-main { font-size: 26px; font-weight: 600; color: var(--text); }
+  .price-range { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .price-tag { font-size: 12px; color: var(--hint); text-align: right; line-height: 1.6; }
+
+  /* Recommendation */
+  .reco-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--orange);
+    border-radius: 0 16px 16px 0;
+    padding: 1rem 1.25rem;
+  }
+
+  .reco-card p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  /* Bottom */
+  .bottom-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.5rem;
+  }
+
+  .btn-secondary {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+  }
+
+  .btn-secondary:hover { background: var(--bg); }
+
+  .btn-primary {
+    flex: 1;
+    padding: 12px;
+    background: var(--orange);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: opacity 0.2s;
+  }
+
+  .btn-primary:hover { opacity: 0.9; }
+
+  .disclaimer {
+    font-size: 11px;
+    color: var(--hint);
+    text-align: center;
+    margin-top: 1.25rem;
+    line-height: 1.6;
+  }
+
+  canvas { display: none; }
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <canvas id="c"></canvas>
+  <input type="file" id="file-input" accept="image/*">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">CARS24</div>
+    <div class="header-text">
+      <h1>AI condition evaluator</h1>
+      <p>Upload a photo — instant condition score &amp; price estimate</p>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div id="upload-section">
+    <div class="drop-zone" id="drop-zone">
+      <div class="upload-icon-wrap">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <path d="M13 17V7M13 7L8 12M13 7L18 12" stroke="#FF5A00" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h16" stroke="#FF5A00" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3>Drop your car photo here</h3>
+      <p>Works with any angle — front, rear, side, interior</p>
+      <div class="hint">JPG · PNG · WEBP · AVIF · HEIC</div>
+    </div>
+    <div class="or-divider">or</div>
+    <button class="browse-btn" onclick="document.getElementById('file-input').click()">Browse from device</button>
+  </div>
+
+  <!-- PREVIEW -->
+  <div id="preview-section">
+    <div class="preview-wrap">
+      <img id="preview-img" class="preview-img" alt="Car preview">
+      <button class="change-btn" onclick="resetApp()">Change photo</button>
+    </div>
+    <button class="analyze-btn" id="analyze-btn" onclick="analyzeImage()">
+      Analyze this car
+    </button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading-section">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <h3>AI is inspecting your car</h3>
+      <p>Analyzing condition, detecting issues, estimating value…</p>
+      <div class="loading-steps">
+        <div class="step active" id="step-1"><div class="step-dot"></div>Reading image</div>
+        <div class="step" id="step-2"><div class="step-dot"></div>Detecting issues</div>
+        <div class="step" id="step-3"><div class="step-dot"></div>Estimating value</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error-section"></div>
+
+  <!-- RESULTS -->
+  <div id="results-section"></div>
+
+</div>
+
+<script>
+  let imgB64 = null;
+
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+  dropZone.addEventListener('click', () => document.getElementById('file-input').click());
+  document.getElementById('file-input').addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+  function loadFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 900;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.getElementById('c');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.82);
+        imgB64 = compressed.split(',')[1];
+        document.getElementById('preview-img').src = compressed;
+        show('preview-section');
+      };
+      img.onerror = () => showError('Could not read this image format.', 'Please convert to JPG or PNG and try again.');
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function show(id) {
+    ['upload-section','preview-section','loading-section'].forEach(s => {
+      document.getElementById(s).style.display = s === id ? 'block' : 'none';
+    });
+  }
+
+  function resetApp() {
+    imgB64 = null;
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('error-section').style.display = 'none';
+    document.getElementById('file-input').value = '';
+    show('upload-section');
+  }
+
+  function showError(title, detail) {
+    show('preview-section');
+    const el = document.getElementById('error-section');
+    el.style.display = 'block';
+    el.innerHTML = `<div class="error-box"><strong>${title}</strong>${detail || ''}</div>`;
+  }
+
+  let stepTimer;
+  function startStepAnimation() {
+    let s = 1;
+    document.querySelectorAll('.step').forEach(el => { el.className = 'step'; });
+    document.getElementById('step-1').classList.add('active');
+    stepTimer = setInterval(() => {
+      if (s < 3) {
+        document.getElementById('step-' + s).className = 'step done';
+        s++;
+        document.getElementById('step-' + s).classList.add('active');
+      }
+    }, 4000);
+  }
+
+  function stopStepAnimation() { clearInterval(stepTimer); }
+
+  async function analyzeImage() {
+    if (!imgB64) return;
+    document.getElementById('error-section').style.display = 'none';
+    document.getElementById('results-section').style.display = 'none';
+    show('loading-section');
+    startStepAnimation();
+
+    const prompt = `You are an expert automotive inspector for Cars24, India's largest used car marketplace. Analyze this car image carefully and thoroughly.
+
+Return ONLY a raw JSON object — no markdown, no backticks, no explanation before or after.
+
+{
+  "overall_score": <number 1.0-10.0, one decimal>,
+  "condition_label": "<Excellent|Good|Fair|Poor>",
+  "car_description": "<make, model, variant if identifiable, e.g. Renault Kwid Climber>",
+  "plate_number": "<license plate if visible, else null>",
+  "summary": "<one crisp sentence describing overall condition, max 20 words>",
+  "breakdown": {
+    "exterior": <1-10>,
+    "paint": <1-10>,
+    "glass": <1-10>,
+    "tires": <1-10>
+  },
+  "issues": [
+    { "description": "<clear short title of issue>", "severity": "<High|Medium|Low>" }
+  ],
+  "estimated_price_inr": <realistic integer, Indian used car market 2025>,
+  "price_range_low": <integer>,
+  "price_range_high": <integer>,
+  "recommendation": "<2-3 actionable sentences for a buyer or seller>"
+}
+
+Be specific and realistic. If image quality is low or it's not a car, explain in summary and give low scores. Return ONLY valid JSON.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1200,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imgB64 } },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        })
+      });
+
+      stopStepAnimation();
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showError('API error ' + res.status, ' — ' + (err.error?.message || 'Please try again.'));
+        return;
+      }
+
+      const data = await res.json();
+      const rawText = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+      const match = rawText.match(/\{[\s\S]*\}/);
+      if (!match) { showError('Could not parse AI response.', ''); return; }
+      const r = JSON.parse(match[0]);
+      renderResults(r);
+
+    } catch (err) {
+      stopStepAnimation();
+      showError('Something went wrong.', ' ' + err.message);
+    }
+  }
+
+  function fmt(n) {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
+  }
+
+  function renderResults(r) {
+    show('upload-section');
+    document.getElementById('upload-section').style.display = 'none';
+
+    const circum = 2 * Math.PI * 32;
+    const offset = circum - (r.overall_score / 10) * circum;
+    const badgeClass = r.condition_label === 'Excellent' || r.condition_label === 'Good' ? 'badge-good' : r.condition_label === 'Fair' ? 'badge-fair' : 'badge-poor';
+    const dotClass = s => s === 'High' ? 'd-high' : s === 'Medium' ? 'd-med' : 'd-low';
+
+    const issuesHtml = (r.issues || []).map(i => `
+      <div class="issue-row">
+        <div class="sev-dot ${dotClass(i.severity)}"></div>
+        <div>
+          <div class="i-title">${i.description}</div>
+          <div class="i-sev">${i.severity} severity</div>
+        </div>
+      </div>`).join('');
+
+    const bd = r.breakdown || {};
+    const breakdownHtml = Object.entries(bd).map(([k, v]) => `
+      <div class="breakdown-item">
+        <div class="b-label">${k.charAt(0).toUpperCase() + k.slice(1)}</div>
+        <div class="b-track"><div class="b-fill" style="width:${Math.round((v/10)*100)}%"></div></div>
+        <div class="b-score">${v}/10</div>
+      </div>`).join('');
+
+    const plateHtml = r.plate_number ? `<div class="car-id">${r.plate_number}</div>` : '';
+
+    const el = document.getElementById('results-section');
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div class="section-label">Condition score</div>
+      <div class="score-card">
+        <div class="score-ring">
+          <svg viewBox="0 0 80 80">
+            <circle class="score-ring-track" cx="40" cy="40" r="32"/>
+            <circle class="score-ring-fill" cx="40" cy="40" r="32"
+              stroke-dasharray="${circum}"
+              stroke-dashoffset="${offset}"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-num">${r.overall_score}</div>
+            <div class="score-denom">/10</div>
+          </div>
+        </div>
+        <div class="score-meta">
+          <h2>${r.summary}</h2>
+          <span class="badge ${badgeClass}">${r.condition_label} condition</span>
+          <div class="car-id">${r.car_description || ''}</div>
+          ${plateHtml}
+        </div>
+      </div>
+
+      <div class="section-label">Breakdown</div>
+      <div class="breakdown-grid">${breakdownHtml}</div>
+
+      ${issuesHtml ? `<div class="section-label">Issues detected</div><div class="issues-card">${issuesHtml}</div>` : ''}
+
+      <div class="section-label">Estimated market value</div>
+      <div class="price-card">
+        <div>
+          <div class="price-main">${fmt(r.estimated_price_inr)}</div>
+          <div class="price-range">Range: ${fmt(r.price_range_low)} – ${fmt(r.price_range_high)}</div>
+        </div>
+        <div class="price-tag">India used car market<br>2025 estimate</div>
+      </div>
+
+      <div class="section-label">Recommendation</div>
+      <div class="reco-card"><p>${r.recommendation}</p></div>
+
+      <div class="bottom-row">
+        <button class="btn-secondary" onclick="resetApp()">Analyze another</button>
+        <button class="btn-primary" onclick="window.print()">Save report</button>
+      </div>
+
+      <div class="disclaimer">* Analysis based on uploaded photo only. A full 360° inspection and mechanical evaluation is recommended before any transaction.</div>
+    `;
+  }
+</script>
+</body>
+</html>
